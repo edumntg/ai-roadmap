@@ -118,6 +118,40 @@ def depthFirstSearch(problem: SearchProblem):
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+
+    # This one is very similar to DFS but instead of using a Stack, we use a Queue
+
+    # Expanded
+    closed = set()
+
+    # Fringe is now a Queue
+    fringe = util.Queue()
+
+    # Add initial state, its moves and cost
+    fringe.push((problem.getStartState(), [], 0))
+
+    # Now, solve
+    while not fringe.isEmpty():
+        # Get current state
+        currentState, currentMoves, currentCost = fringe.pop()
+
+        # Check if current state is goal state
+        if problem.isGoalState(currentState):
+            return currentMoves
+        
+        # Check if current state not in closed set
+        if not currentState in closed:
+            # Add current state to closed (Visited) set
+            closed.add(currentState)
+
+            # Loop through rest
+            for state, newMove, cost in problem.getSuccessors(currentState):
+                # Add to fringe
+                fringe.push((state, currentMoves + [newMove], currentCost + cost))
+
+    return []
+
+
     util.raiseNotDefined()
 
 def uniformCostSearch(problem: SearchProblem):
