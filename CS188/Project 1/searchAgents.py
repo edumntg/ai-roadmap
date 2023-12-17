@@ -296,15 +296,20 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        return (self.startingPosition, (0,0,0,0)) # The 4 zeros are binary variables for each corner
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
 
+        # We assume that the state is a goal if all corners are visited
+        currentPos, visitedCorners = state
+        
+        return sum(list(visitedCorners)) == len(self.corners)
+    
     def getSuccessors(self, state: Any):
         """
         Returns successor states, the actions they require, and a cost of 1.
@@ -315,6 +320,8 @@ class CornersProblem(search.SearchProblem):
             state, 'action' is the action required to get there, and 'stepCost'
             is the incremental cost of expanding to that successor
         """
+        x, y = state[0]
+        cornersVisited = state[1] # tuples are inmutable
 
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
@@ -326,6 +333,26 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+
+            # Get movement
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+
+            if hitsWall:
+                continue
+
+            nextPos = (nextx, nexty)
+
+            # Check if next node is a corner
+            nextCornersVisited = list(cornersVisited)
+            if nextPos in self.corners:
+                # Check if this corner is not already visited
+                cornerIndex = self.corners.index(nextPos)
+                nextCornersVisited[cornerIndex] = 1 # Set visited
+            
+            newState = (nextPos, tuple(nextCornersVisited))
+            successors.append((newState, action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
