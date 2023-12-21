@@ -175,8 +175,52 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Get  all actions
+        maxUtility = -1e9
+        maxUtilityAction = None
+        for action in gameState.getLegalActions(0): # agent 0 is pacman
+            successor = gameState.generateSuccessor(0, action)
+            stateUtility = self.value(successor, 1, 0)
+            if stateUtility > maxUtility:
+                maxUtility = stateUtility
+                maxUtilityAction = action
 
+        return maxUtilityAction
+
+    def value(self, state: GameState, agentIndex: int, currentDepth: int):
+        # Check if state is a terminal state
+        if state.isWin() or state.isLose() or currentDepth == self.depth:
+            return self.evaluationFunction(state)
+        
+        # If agent is pacman, maximize value
+        if agentIndex == 0: # Pacman is agent 0
+            return self.max_value(state, agentIndex, currentDepth)
+        else:
+            return self.min_value(state, agentIndex, currentDepth)
+        
+    def max_value(self, state: GameState, agentIndex: int, currentDepth: int):
+        # Initialize v
+        v = -1e9
+        # Now, loop through successors
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            v = max(v, self.value(successor, 1, currentDepth))
+
+        return v
+    
+    def min_value(self, state: GameState, agentIndex: int, currentDepth: int):
+        # Initialize v
+        v = 1e9
+        # Now, loop through successors
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            if agentIndex == state.getNumAgents() - 1: # Last agent
+                v = min(v, self.value(successor, 0, currentDepth + 1)) # Maximize for pacman
+            else:
+                v = min(v, self.value(successor, agentIndex + 1, currentDepth)) # Minimize for next ghost
+    
+        return v
+    
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
