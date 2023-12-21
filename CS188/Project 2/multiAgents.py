@@ -306,7 +306,61 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        max_avg_action = None
+        max_avg = -1e9
+        # Loop through successors
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            # Compute avg value
+            successor_avg = self.value(successor, 1, 0)
+            if successor_avg > max_avg:
+                max_avg = successor_avg
+                max_avg_action = action
+
+        return max_avg_action
+
+    def value(self, state: GameState, agentIndex: int, currentDepth: int):
+        # Check ifstate  is a terminal state
+        if state.isWin() or state.isLose() or currentDepth == self.depth:
+            return self.evaluationFunction(state)
+        
+        if agentIndex == 0: # pacman
+            return self.max_value(state, agentIndex, currentDepth)
+        else:
+            return self.min_value(state, agentIndex, currentDepth)
+            
+    def max_value(self, state: GameState, agentIndex: int, currentDepth: int):
+        # initialize v
+        v = -1e9
+
+        # Loop through successors
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            # if agent is pacman, to deeper
+            v = max(v, self.value(successor, 1, currentDepth))
+
+        return v
+    
+    def min_value(self, state: GameState, agentIndex: int, currentDepth: int):
+        """
+            Now instead of the minimum value, we calculate the average
+        """
+        # Initialize v
+        v = 0
+        n_states = 0
+        # Loop through successors
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            # If agent is last one, go deeper
+            if agentIndex == state.getNumAgents() - 1: # last ghost
+                v += self.value(successor, 0, currentDepth + 1)
+            else: # agent is ghost, examine next ghost
+                v += self.value(successor, agentIndex + 1, currentDepth)
+
+        if n_states > 0:
+            v = v / n_states
+
+        return v
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
