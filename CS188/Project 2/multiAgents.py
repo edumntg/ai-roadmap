@@ -370,7 +370,52 @@ def betterEvaluationFunction(currentGameState: GameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    #util.raiseNotDefined()
+
+    pacmanPos = currentGameState.getPacmanPosition()
+    currentFood = currentGameState.getFood()
+    currentGhostStates = currentGameState.getGhostStates()
+    currentScaredTimes = [ghostState.scaredTimer for ghostState in currentGhostStates]
+
+    # Compute a score for ghosts
+    all_ghosts_cost = []
+    for i, ghost in enumerate(currentGhostStates):
+        ghost_cost = 0 # Default cost for ghost
+        # Get ghost position
+        ghost_pos = ghost.getPosition()
+        # Calculate distance to ghost
+        distance_to_ghost = util.manhattanDistance(pacmanPos, ghost_pos)
+        # Get scared timer for this ghost
+        ghost_timer = currentScaredTimes[i]
+        # Each movement is a time step, so the ghostScaredTimer is equal to the distance...
+        # ...required for pacman to eat it
+
+        # If the timer is higher than the distance, then pacman can reach it
+        if ghost_timer > distance_to_ghost:
+            ghost_cost = 1000
+
+        # If distance is zero, then pacman is dead
+        if distance_to_ghost == 0:
+            ghost_cost = -1e9 # pacman died
+
+        all_ghosts_cost.append(ghost_cost)
+
+    # Get distance to closest food
+    closest_food_distance = 1e9
+    for food_pos in currentFood.asList():
+        food_distance = manhattanDistance(pacmanPos, food_pos)
+        if food_distance < closest_food_distance:
+            closest_food_distance = food_distance
+    
+    # Now, create a score based on food
+    foodScore = 1.0/(1.0 + closest_food_distance) # closer is better
+
+    # For ghosts, calculate worst case (min score)
+    return currentGameState.getScore() + min(all_ghosts_cost) + foodScore
+
+
+
+
 
 # Abbreviation
 better = betterEvaluationFunction
