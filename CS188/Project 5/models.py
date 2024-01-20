@@ -84,7 +84,7 @@ class RegressionModel(object):
         "*** YOUR CODE HERE ***"
 
         # Here we implement two layers
-        self.w1 = nn.Parameter(1, 512)
+        self.w1 = nn.Parameter(784, 512)
         self.b1 = nn.Parameter(1, 512)
 
         self.w2 = nn.Parameter(512, 1)
@@ -196,6 +196,25 @@ class DigitClassificationModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        # Batch size and learning rate
+        self.batch_size = 200
+        self.lr = 0.05
+        self.n_features = 784
+
+        # Input layer weights
+        self.w1 = nn.Parameter(self.n_features, 512)
+        self.b1 = nn.Parameter(1, 512)
+
+        # Hidden layer
+        self.w2 = nn.Parameter(512, 256)
+        self.b2 = nn.Parameter(1, 256)
+
+        # Output layer
+        self.w3 = nn.Parameter(256, 10)
+        self.b3 = nn.Parameter(1, 10)
+
+        
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -212,6 +231,23 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # Apply input layer
+        y = nn.Linear(x, self.w1) # sizes: (batch_size, 784) * (784, 512) = (batch_size, 512)
+        y = nn.AddBias(y, self.b1) # sizes: (batch_size, 512) + (1, 512) = (batch_size, 512)
+        y = nn.ReLU(y) # size: (batch_size, 512)
+
+        # Hidden layer
+        y = nn.Linear(y, self.w2) # sizes: (batch_size, 512) * (512, 256) = (batch_size, 256)
+        y = nn.AddBias(y, self.b2) # sizes: (batch_size, 256) + (1, 256) = (batch_size, 256)
+        y = nn.ReLU(y) # size: (batch_size, 256)
+
+        # Output layer
+        y = nn.Linear(y, self.w3) # sizes: (batch_size, 256) * (256, 10) = (batch_size, 10)
+        y = nn.AddBias(y, self.b3) # sizes: (batch_size, 10) + (1, 10) = (batch_size, 10)
+
+        return y
+
+
     def get_loss(self, x, y):
         """
         Computes the loss for a batch of examples.
@@ -226,12 +262,46 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        # Get predictions
+        y_hat = self.run(x)
+
+        # Calculate loss
+        loss = nn.SoftmaxLoss(y_hat, y)
+
+        return loss
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+
+        # We train until accuracy > 98%
+        accuracy = 0.0
+        eps = 0.98 # minimum accuracy required for training to end
+
+        epoch = 1
+        while accuracy <= eps:
+            for x, y in dataset.iterate_once(self.batch_size):
+                # Get loss
+                loss = self.get_loss(x, y)
+
+                # Compute gradients
+                dw1, dw2, dw3, db1, db2, db3 = nn.gradients(loss, [self.w1, self.w2, self.w3, self.b1, self.b2, self.b3])
+
+                # Update parameters
+                self.w1.update(dw1, -self.lr)
+                self.w2.update(dw2, -self.lr)
+                self.w3.update(dw3, -self.lr)
+                self.b1.update(db1, -self.lr)
+                self.b2.update(db2, -self.lr)
+                self.b3.update(db3, -self.lr)
+
+            
+            accuracy = dataset.get_validation_accuracy()
+            print("Epoch {0}, acc: {1:.4f}".format(epoch, accuracy))
+            epoch += 1
+
 
 class LanguageIDModel(object):
     """
