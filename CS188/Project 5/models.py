@@ -321,6 +321,19 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.output_size = len(self.languages)
+        self.hidden_size = 1024
+
+        self.w1 = nn.Parameter(self.num_chars, self.hidden_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+
+        self.w2 = nn.Parameter(self.hidden_size, self.output_size)
+        self.b2 = nn.Parameter(1, self.output_size)
+
+        self.w3 = nn.Parameter(self.output_size, self.hidden_size)
+
+        self.lr = 0.05
+        self.batch_size = 64
 
     def run(self, xs):
         """
@@ -353,6 +366,27 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+
+        # Compute output for first sample
+        y = nn.Linear(xs[0], self.w1) # sizes: (batch_size, 47) * (47, hidden_size) = (batch_size, hidden_size)
+        y = nn.AddBias(y, self.b1) # sizes: (batch_size, hidden_size) + (batch_size, hidden_size) = (batch_size, hidden_size)
+        y = nn.ReLU(y) # (batch_size, hidden_size)
+
+        y = nn.Linear(y, self.w2) # sizes: (batch_size, hidden_size) * (hidden_size, output_size) = (batch_size, output_size)
+        h = nn.AddBias(y, self.b2) # sizes: (batch_size, output_size) + (batch_size, output_size) = (batch_size, output_size)
+
+        # Now compute for the rest
+        for x in xs[1:]:
+            y = nn.Add(nn.Linear(x, self.w1), nn.Linear(h, self.w3)) # [(batch_size, 47)*(47, hidden_size)] + [(batch_size, output_size) * (output_size, hidden_size)] = (batch_size, hidden_size)
+            y = nn.AddBias(y, self.b1) # (batch_size, hidden_size)
+            y = nn.ReLU(y)
+
+            y = nn.Linear(y, self.w2) # sizes: (batch_size, hidden_size) * (hidden_size, output_size) = (batch_size, output_size)
+            h = nn.AddBias(y, self.b2) # (batch_size, output_size)
+
+        return h
+
+
     def get_loss(self, xs, y):
         """
         Computes the loss for a batch of examples.
@@ -369,8 +403,43 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # Make predictions
+        y_hat = self.run(xs)
+
+        return nn.SoftmaxLoss(y_hat, y)
+
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+
+        # train until the accuracy is higher than 98%
+        eps = 0.81
+        accuracy = 0.0
+        epoch = 1
+
+        while accuracy < eps:
+
+            for x, y in dataset.iterate_once(self.batch_size):
+                # Compute loss
+                loss = self.get_loss(x, y)
+
+                # Compute gradients
+                dw1, dw2, dw3, db1, db2 = nn.gradients(loss, [self.w1, self.w2, self.w3, self.b1, self.b2])
+
+                # Update weights
+                self.w1.update(dw1, -self.lr)
+                self.w2.update(dw2, -self.lr)
+                self.w3.update(dw3, -self.lr)
+                self.b1.update(db1, -self.lr)
+                self.b2.update(db2, -self.lr)
+
+            # Compute accuracy
+            accuracy = dataset.get_validation_accuracy()
+                
+            # Print accuracy and loss
+            print("Epoch {0}, accuracy: {1:.4f}, loss: {2:.4f}".format(epoch, accuracy, nn.as_scalar(loss)))
+            epoch += 1
+
+
