@@ -83,6 +83,16 @@ class RegressionModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        # Here we implement two layers
+        self.w1 = nn.Parameter(1, 512)
+        self.b1 = nn.Parameter(1, 512)
+
+        self.w2 = nn.Parameter(512, 1)
+        self.b2 = nn.Parameter(1, 1)
+
+        self.lr = 0.05
+
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -93,6 +103,17 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+
+        # Apply the first layer
+        z1 = nn.Linear(x, self.w1) #sizes (1,1) * (1, 512) = (1, 512)
+        z1 = nn.AddBias(z1, self.b1) # sizes (1,512) + (1,512) = (1, 512)
+        z1 = nn.ReLU(z1) # size: (1, 512)
+
+        # Second (output) layer
+        z2 = nn.Linear(z1, self.w2) # sizes: (1, 512) * (512, 1) = (1,1)
+        z2 = nn.AddBias(z2, self.b2) # sizes: (1,1) + (1,1) = (1,1)
+
+        return z2
 
     def get_loss(self, x, y):
         """
@@ -105,12 +126,57 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        # Make predictions
+        y_hat = self.run(x)
+
+        # Compute loss
+        loss = nn.SquareLoss(y_hat, y)
+
+        return loss
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+
+        # We will train until loss is < 0.02
+        loss = float('inf')
+        eps = 0.01
+        batch_size = 200
+        epoch = 1
+
+        print('Training started!')
+        while loss >= eps:
+            epoch_loss = 0 # loss for current iteration
+            for x, y in dataset.iterate_once(batch_size):
+
+                # Compute loss
+                loss = self.get_loss(x, y)
+
+                # Compute gradient
+                dw1, dw2, db1, db2 = nn.gradients(loss, [self.w1, self.w2, self.b1, self.b2])
+
+                # Convert loss to scalar
+                loss = nn.as_scalar(loss)
+
+                # Update parameters
+                self.w1.update(dw1, -self.lr) # w -= learning_rate * dw
+                self.b1.update(db1, -self.lr) # b -= learning_rate * db
+                self.w2.update(dw2, -self.lr)
+                self.b2.update(db2, -self.lr)
+
+                epoch_loss += loss
+
+            # Print loss
+            loss = epoch_loss
+            print("Epoch {0}, loss: {1:.4f}".format(epoch, loss))
+            epoch += 1
+
+        print("Training ended! Final loss: {0:.4f}".format(loss))
+
+
+
 
 class DigitClassificationModel(object):
     """
