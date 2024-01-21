@@ -324,16 +324,20 @@ class LanguageIDModel(object):
         self.output_size = len(self.languages)
         self.hidden_size = 1024
 
+        self.lr = 0.05
+        self.batch_size = 64
+
+        # Input layer
         self.w1 = nn.Parameter(self.num_chars, self.hidden_size)
         self.b1 = nn.Parameter(1, self.hidden_size)
 
+        # Output layer
         self.w2 = nn.Parameter(self.hidden_size, self.output_size)
         self.b2 = nn.Parameter(1, self.output_size)
 
+        # Hidden layer
         self.w3 = nn.Parameter(self.output_size, self.hidden_size)
-
-        self.lr = 0.05
-        self.batch_size = 64
+        self.b3 = nn.Parameter(1, self.hidden_size)
 
     def run(self, xs):
         """
@@ -365,25 +369,31 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        
+        h = None
+        for i, x in enumerate(xs):
+            # If we are at the first sample, we don't have output from previous sample
+            if i == 0:
+                # Pass sampe through first layer
+                y = nn.Linear(x, self.w1) # sizes: (batch_size, n_features) * (n_features, hidden_size) = (batch_size, hidden_size)
+                y = nn.AddBias(y, self.b1)
+                y = nn.ReLU(y)
 
+                # Now pass through output layer
+                y = nn.Linear(y, self.w2) # sizes: (batch_size, hidden_size) * (hidden_size, output_size) = (batch_size, output_size)
+                y = nn.AddBias(y, self.b2)
+                # This output y is the 'h' vector for next sample
+                h = y # (batch_size, output_size)
+            else:
+                # Combine the current sample and output from previous sample
+                y = nn.Add(nn.Linear(x, self.w1), nn.Linear(h, self.w3)) # [(batch_size, n_features) * (n_features, hidden_size)] + [(batch_size, output_size) * (output_size, hidden_size)] = (batch_size, hidden_size)
+                y = nn.AddBias(y, self.b1)
+                y = nn.ReLU(y)
 
-        # Compute output for first sample
-        y = nn.Linear(xs[0], self.w1) # sizes: (batch_size, 47) * (47, hidden_size) = (batch_size, hidden_size)
-        y = nn.AddBias(y, self.b1) # sizes: (batch_size, hidden_size) + (batch_size, hidden_size) = (batch_size, hidden_size)
-        y = nn.ReLU(y) # (batch_size, hidden_size)
+                y = nn.Linear(y, self.w2)
+                y = nn.AddBias(y, self.b2)
 
-        y = nn.Linear(y, self.w2) # sizes: (batch_size, hidden_size) * (hidden_size, output_size) = (batch_size, output_size)
-        h = nn.AddBias(y, self.b2) # sizes: (batch_size, output_size) + (batch_size, output_size) = (batch_size, output_size)
-
-        # Now compute for the rest
-        for x in xs[1:]:
-            y = nn.Add(nn.Linear(x, self.w1), nn.Linear(h, self.w3)) # [(batch_size, 47)*(47, hidden_size)] + [(batch_size, output_size) * (output_size, hidden_size)] = (batch_size, hidden_size)
-            y = nn.AddBias(y, self.b1) # (batch_size, hidden_size)
-            y = nn.ReLU(y)
-
-            y = nn.Linear(y, self.w2) # sizes: (batch_size, hidden_size) * (hidden_size, output_size) = (batch_size, output_size)
-            h = nn.AddBias(y, self.b2) # (batch_size, output_size)
-
+                h = y
         return h
 
 
@@ -419,7 +429,7 @@ class LanguageIDModel(object):
         accuracy = 0.0
         epoch = 1
 
-        while accuracy < eps:
+        while accuracy <= eps:
 
             for x, y in dataset.iterate_once(self.batch_size):
                 # Compute loss
