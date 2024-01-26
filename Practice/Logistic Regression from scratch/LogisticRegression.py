@@ -21,7 +21,7 @@ class LogisticRegressionModel(object):
         self.w = np.random.rand(self.n_features + 1,1) # +1 because of intercept
         self.b = 0
 
-    def train(self, x, y, epochs = 10):
+    def train(self, x, y, epochs = 10, validation_dataset = None):
 
         x = self.add_intercept(x)
 
@@ -46,8 +46,19 @@ class LogisticRegressionModel(object):
             y_hat = self.predict(x)
             acc = accuracy_score(y, y_hat)
 
+            # If validation dataset provided, calculate validation accuracy
+            if validation_dataset:
+                (X_test, y_test) = validation_dataset
+                X_test = self.add_intercept(X_test)
+                y_hat_test = self.predict(X_test)
+                val_acc = accuracy_score(y_test, y_hat_test)
+
             # Print
-            print(f"Epoch {epoch}, acc: {acc:.2f}, loss: {l:.4f}")
+            print(f"Epoch {epoch}, acc: {acc:.2f}, loss: {l:.4f}", end = "")
+            if validation_dataset:
+                print(f", val_acc: {val_acc:.2f}", end = "")
+            
+            print("")
     
     def add_intercept(self, x):
         intercept = np.ones((x.shape[0], 1))
@@ -55,7 +66,7 @@ class LogisticRegressionModel(object):
 
     def loss(self, y, h):
         N = y.size
-        return (-1.0/N)*np.sum((-y * np.log(h) - (1 - y)*np.log(1-h)))
+        return (-y * np.log(h) - (1 - y)*np.log(1-h)).mean()
 
     def __sigmoid(self, z):
         return 1.0/(1.0 + np.exp(-z))
@@ -71,13 +82,17 @@ class LogisticRegressionModel(object):
 
     def predict_proba(self, x):
         #x = self.add_intercept(x)
-        z = np.dot(x, self.w) + self.b
+        z = np.dot(x, self.w)
         h = self.activation(z)
 
         return h
     
     def gradient(self, x, y, h):
         N = len(y)
-        dw = (1.0/N)*np.sum(np.dot(x.T, h - y))
-        db = (1.0/N)*np.sum(h - y)
+
+        if len(y.shape) == 1:
+            y = np.expand_dims(y, 1)
+
+        dw = np.dot(x.T, h - y) * (1.0 / N)
+        db = (1.0/N)*(h - y)
         return dw, db
