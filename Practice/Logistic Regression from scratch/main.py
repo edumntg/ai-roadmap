@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 # Generate synthetic data
 X, y = make_classification(
-    n_samples = 1000,
+    n_samples = 20,
     n_features = 2,
     n_redundant = 0,
     n_informative = 2,
@@ -23,4 +23,5 @@ args = ModelArgs(
 )
 
 model = LogisticRegressionModel(args)
-model.train(X_train, y_train, epochs = 1000, validation_dataset = (X_test, y_test))
+model.train(X_train, y_train, epochs = 2, validation_dataset = (X_test, y_test))
+print(model.w)

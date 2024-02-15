@@ -32,6 +32,9 @@ class LogisticRegressionModel(object):
             # Compute probabilities
             h = self.__sigmoid(z)
 
+            print('Z', z)
+            print('H', h)
+
             # Calculate loss
             l = self.loss(y, h)
             
@@ -66,6 +69,7 @@ class LogisticRegressionModel(object):
 
     def loss(self, y, h):
         N = y.size
+        print(y.shape, np.log(h).shape, (y*h).shape)
         return (-y * np.log(h) - (1 - y)*np.log(1-h)).mean()
 
     def __sigmoid(self, z):
