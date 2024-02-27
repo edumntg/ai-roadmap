@@ -27,8 +27,8 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    x_reshaped = x.reshape(x.shape[0], -1)
+    out = x_reshaped@w + b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -55,13 +55,40 @@ def affine_backward(dout, cache):
     - db: Gradient with respect to b, of shape (M,)
     """
     x, w, b = cache
-    dx, dw, db = None, None, None
+    dx, dw, db = None, None, None # dfdx, dfd2, dfdb
+
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    x_reshaped = x.reshape((x.shape[0], -1))
 
-    pass
+    # The gradient with respect the weights is:
+    # df/dw0 = df*x0
+    # df/dw1 = df*x1
+    # ...
+    # df/dwn = df*xn
+
+    # Because in the end, the final gradient with respect all weights is the sum of each individual gradient, we get:
+    # df/dw = df*x0 + df*x1 + ... + df*xn = df*[x0, x1, x2, ..., xn] = x.T@df
+
+    # This also applies for df/dx so:
+    # df/dx = df*[w0, w1, ...] = df@w.T
+
+    # x has shape (2, 120)
+    # w has shape (120, 3)
+    # b has shape (3,)
+
+    # dout = x@w + b has shape = (2,3)
+
+    # dw must have the same shape as w so: dw = x.T@dout
+    dw = x_reshaped.T@dout # should have shape (120,3)
+
+    # dx must have the same shape as x so: dx = dout@w.T and then we reshape it to its original shape
+    dx = (dout@w.T).reshape(x.shape[0], *x.shape[1:])
+
+    db = np.sum(dout, axis =0)
+                   
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -87,7 +114,7 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.maximum(0, x)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -114,7 +141,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dout[x < 0] = 0
+    dx = dout
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
