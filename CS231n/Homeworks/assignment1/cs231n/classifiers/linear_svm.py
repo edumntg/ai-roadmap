@@ -82,23 +82,22 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    N = len(y) # num samples
-    M = W.shape[1] # num classes
+    num_samples = X.shape[0] # num samples
+    num_classes = W.shape[1] # num classes
 
     # Compute scores
     scores = X.dot(W)
-    
-    # Get correct classes
-    correct_scores = scores[range(N), y].reshape(N, 1) # convert to (samples, 1)
-    
-    # Compute margins
-    margins = np.maximum(0, scores - correct_scores + 1)
-    margins[range(N), y] = 0 # ignore correct scores in loss
 
-    loss = margins.sum() / N
-    
+    # Correct scores
+    sy = scores[np.arange(num_samples), y].reshape(num_samples, 1)
+    margins = np.maximum(0, scores - sy + 1)
+
+    margins[np.arange(num_samples), y] = 0 # ignore correct classes in loss
+
+    loss = margins.sum() / num_samples
+
     # Add regularization
-    loss += reg * np.sum(W*W) # L2 regularization
+    loss += reg*np.sum(W*W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -113,9 +112,15 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    dW = (margins > 0).astype(int)
-    dW[range(N), y] -= dW.sum(axis = 1)
-    dW = X.T @ dW / N + 2*reg*W
+    margins[margins > 0] = 1
+    margins[np.arange(num_samples), y] -= margins.sum(axis = 1)
+    dW = X.T.dot(margins)
+
+    dW /= num_samples
+
+    dW += 2*reg*W
+
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
