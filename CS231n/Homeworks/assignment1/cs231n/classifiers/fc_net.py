@@ -55,7 +55,10 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.params['W1'] = np.random.randn(input_dim, hidden_dim) * weight_scale
+        self.params['b1'] = np.zeros(hidden_dim,)
+        self.params['W2'] = np.random.randn(hidden_dim, num_classes) * weight_scale
+        self.params['b2'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -88,7 +91,11 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # forward-pass through first layer
+        out1, cache1 = affine_forward(X, self.params['W1'], self.params['b1'])
+        out2, cache2 = relu_forward(out1)
+        scores, cache3 = affine_forward(out2, self.params['W2'], self.params['b2'])
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -112,7 +119,29 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dloss = softmax_loss(scores, y)
+        # Add regularization
+        loss += (1/2)*self.reg*(np.sum(self.params['W1']**2) + np.sum(self.params['W2']**2))
+
+        # Get gradient from last layer
+        dout3, dW2, db2 = affine_backward(dloss, cache3)
+        dW2 += self.reg*self.params['W2']
+
+        # Gradient from relu
+        dout2 = relu_backward(dout3, cache2)
+
+        # Get gradient from hidden layer
+        dout1, dW1, db1 = affine_backward(dout2, cache1)
+
+        # Regularization
+        dW1 += self.reg*self.params['W1']
+
+        grads = {
+            'W1': dW1,
+            'W2': dW2,
+            'b1': db1,
+            'b2': db2
+        }
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

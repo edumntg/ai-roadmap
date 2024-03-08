@@ -801,7 +801,15 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = x.shape[0]
+    sy = x[range(N), y].reshape((N,1)) # syi scores
+    margins = np.maximum(0, x - sy + 1)
+    margins[range(N), y] = 0 # ignore correct labels in loss
+    loss = margins.sum() / N
+
+    dx = (margins > 0).astype(float) / N
+    dx[range(N), y] -= dx.sum(axis = 1)
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -831,7 +839,12 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = x.shape[0]
+    softmax = np.exp(x) / np.sum(np.exp(x), axis = 1, keepdims = True)
+    loss = np.sum(-np.log(softmax[range(N), y])) / N
+
+    softmax[range(N), y] -= 1
+    dx = softmax / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
